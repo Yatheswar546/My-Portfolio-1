@@ -153,108 +153,318 @@ function initSkillAnimations() {
     });
 }
 
-/* ===================== CONTACT FORM VALIDATION ===================== */
-function initContactForm() {
-    const form = document.getElementById("contact-form");
-    if (!form) return;
-    const fields = {
-        name: {
-            element: document.getElementById("name"),
-            errorElement: null,
-            validate: (value) => {
-                if (!value.trim()) return "Name is required";
-                if (value.trim().length < 2) return "Name must be at least 2 characters";
-                return "";
-            }
-        },
-        email: {
-            element: document.getElementById("email"),
-            errorElement: null,
-            validate: (value) => {
-                if (!value.trim()) return "Email is required";
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(value)) return "Please enter a valid email address";
-                return "";
-            }
-        },
-        subject: {
-            element: document.getElementById("subject"),
-            errorElement: null,
-            validate: () => "" // Optional field
-        },
-        message: {
-            element: document.getElementById("message"),
-            errorElement: null,
-            validate: (value) => {
-                if (!value.trim()) return "Message is required";
-                if (value.trim().length < 10) return "Message must be at least 10 characters";
-                return "";
-            }
-        }
-    };
-    // Get error message elements
-    Object.keys(fields).forEach((key) => {
-        const field = fields[key];
-        field.errorElement = field.element.parentElement.querySelector(".error-message");
-    });
-    // Validate single field
-    function validateField(fieldName) {
-        const field = fields[fieldName];
-        const value = field.element.value;
-        const error = field.validate(value);
-        if (error) {
-            field.element.classList.add("error");
-            field.errorElement.textContent = error;
-            return false;
+/* ============================================
+   Training Photos Slider
+   ============================================ */
+
+const trainingSlider = document.getElementById('training-slider');
+const trainingSlides = document.querySelectorAll('.training-slide');
+const trainingPrev = document.querySelector('.training-prev');
+const trainingNext = document.querySelector('.training-next');
+const trainingDots = document.querySelectorAll('.training-dot');
+
+if (trainingSlider && trainingSlides.length > 0) {
+
+    let trainingCurrent = 0;
+
+    function getTrainingSlidesPerView() {
+        return window.innerWidth <= 768 ? 1 : 2;
+    }
+
+    function updateTrainingSlider() {
+
+        const slidesPerView = getTrainingSlidesPerView();
+        const maxIndex = Math.max(
+            0,
+            trainingSlides.length - slidesPerView
+        );
+
+        trainingCurrent = Math.min(trainingCurrent, maxIndex);
+
+        const slideWidth = trainingSlides[0].offsetWidth;
+        const gap = 16;
+
+        trainingSlider.style.transform =
+            `translateX(-${trainingCurrent * (slideWidth + gap)}px)`;
+
+        trainingDots.forEach((dot, index) => {
+            dot.classList.toggle(
+                'active',
+                index === trainingCurrent
+            );
+        });
+    }
+
+
+    trainingNext?.addEventListener('click', () => {
+
+        const slidesPerView = getTrainingSlidesPerView();
+        const maxIndex = Math.max(
+            0,
+            trainingSlides.length - slidesPerView
+        );
+
+        if (trainingCurrent < maxIndex) {
+            trainingCurrent++;
         } else {
-            field.element.classList.remove("error");
-            field.errorElement.textContent = "";
-            return true;
+            trainingCurrent = 0;
+        }
+
+        updateTrainingSlider();
+    });
+
+
+    trainingPrev?.addEventListener('click', () => {
+
+        const slidesPerView = getTrainingSlidesPerView();
+        const maxIndex = Math.max(
+            0,
+            trainingSlides.length - slidesPerView
+        );
+
+        if (trainingCurrent > 0) {
+            trainingCurrent--;
+        } else {
+            trainingCurrent = maxIndex;
+        }
+
+        updateTrainingSlider();
+    });
+
+
+    trainingDots.forEach((dot, index) => {
+
+        dot.addEventListener('click', () => {
+            trainingCurrent = index;
+            updateTrainingSlider();
+        });
+
+    });
+
+
+    window.addEventListener('resize', updateTrainingSlider);
+
+    updateTrainingSlider();
+}
+
+/* ============================================
+   Student Feedback Slider
+   ============================================ */
+
+const feedbackSlider = document.getElementById('feedback-slider');
+const feedbackSlides = document.querySelectorAll('.feedback-slide');
+const feedbackPrev = document.querySelector('.feedback-prev');
+const feedbackNext = document.querySelector('.feedback-next');
+const feedbackDotsContainer = document.getElementById('feedback-dots');
+
+if (
+    feedbackSlider &&
+    feedbackSlides.length > 0 &&
+    feedbackDotsContainer
+) {
+
+    let feedbackCurrent = 0;
+
+
+    /* --------------------------------------------
+       Determine cards visible at once
+       -------------------------------------------- */
+
+    function getFeedbackSlidesPerView() {
+
+        if (window.innerWidth <= 768) {
+            return 1;
+        }
+
+        if (window.innerWidth <= 1024) {
+            return 2;
+        }
+
+        return 3;
+    }
+
+
+    /* --------------------------------------------
+       Calculate number of pages
+       -------------------------------------------- */
+
+    function getFeedbackPageCount() {
+
+        const slidesPerView = getFeedbackSlidesPerView();
+
+        return Math.max(
+            1,
+            Math.ceil(
+                feedbackSlides.length / slidesPerView
+            )
+        );
+    }
+
+
+    /* --------------------------------------------
+       Create dots automatically
+       -------------------------------------------- */
+
+    function createFeedbackDots() {
+
+        feedbackDotsContainer.innerHTML = '';
+
+        const pageCount = getFeedbackPageCount();
+
+        for (let i = 0; i < pageCount; i++) {
+
+            const dot = document.createElement('button');
+
+            dot.className = 'feedback-dot';
+
+            if (i === feedbackCurrent) {
+                dot.classList.add('active');
+            }
+
+            dot.setAttribute(
+                'aria-label',
+                `Go to feedback page ${i + 1}`
+            );
+
+            dot.addEventListener('click', () => {
+
+                feedbackCurrent = i;
+
+                updateFeedbackSlider();
+
+            });
+
+            feedbackDotsContainer.appendChild(dot);
         }
     }
-    // Add blur validation for immediate feedback
-    Object.keys(fields).forEach((key) => {
-        fields[key].element.addEventListener("blur", () => {
-            validateField(key);
+
+
+    /* --------------------------------------------
+       Update slider position
+       -------------------------------------------- */
+
+    function updateFeedbackSlider() {
+
+        const slidesPerView = getFeedbackSlidesPerView();
+
+        const pageCount = getFeedbackPageCount();
+
+        /* Keep current page valid after resizing */
+        feedbackCurrent = Math.min(
+            feedbackCurrent,
+            pageCount - 1
+        );
+
+
+        /*
+         * Move by the number of cards visible.
+         *
+         * Each card has a 1.25rem gap.
+         */
+        const slideWidth = feedbackSlides[0].offsetWidth;
+
+        const gap = 20;
+
+        const moveAmount =
+            feedbackCurrent *
+            slidesPerView *
+            (slideWidth + gap);
+
+
+        feedbackSlider.style.transform =
+            `translateX(-${moveAmount}px)`;
+
+
+        /* Update dots */
+
+        const dots =
+            feedbackDotsContainer.querySelectorAll(
+                '.feedback-dot'
+            );
+
+        dots.forEach((dot, index) => {
+
+            dot.classList.toggle(
+                'active',
+                index === feedbackCurrent
+            );
+
         });
-        // Clear error on input
-        fields[key].element.addEventListener("input", () => {
-            if (fields[key].element.classList.contains("error")) {
-                validateField(key);
-            }
-        });
-    });
-    // Form submission
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        let isValid = true;
-        // Validate all fields
-        Object.keys(fields).forEach((key) => {
-            if (!validateField(key)) {
-                isValid = false;
-            }
-        });
-        if (isValid) {
-            // Simulate form submission
-            const submitBtn = form.querySelector(".btn-submit");
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<span>Sending...</span>';
-            submitBtn.disabled = true;
-            // Simulate API call
-            setTimeout(() => {
-                submitBtn.innerHTML = '<span>Message Sent!</span><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                submitBtn.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
-                // Reset form after delay
-                setTimeout(() => {
-                    form.reset();
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                    submitBtn.style.background = "";
-                    lucide.createIcons();
-                }, 3000);
-            }, 1500);
+    }
+
+
+    /* --------------------------------------------
+       Next
+       -------------------------------------------- */
+
+    feedbackNext?.addEventListener('click', () => {
+
+        const pageCount = getFeedbackPageCount();
+
+        if (feedbackCurrent < pageCount - 1) {
+
+            feedbackCurrent++;
+
+        } else {
+
+            feedbackCurrent = 0;
+
         }
+
+        updateFeedbackSlider();
+
     });
+
+
+    /* --------------------------------------------
+       Previous
+       -------------------------------------------- */
+
+    feedbackPrev?.addEventListener('click', () => {
+
+        const pageCount = getFeedbackPageCount();
+
+        if (feedbackCurrent > 0) {
+
+            feedbackCurrent--;
+
+        } else {
+
+            feedbackCurrent = pageCount - 1;
+
+        }
+
+        updateFeedbackSlider();
+
+    });
+
+
+    /* --------------------------------------------
+       Handle browser resizing
+       -------------------------------------------- */
+
+    window.addEventListener(
+        'resize',
+        () => {
+
+            feedbackCurrent = 0;
+
+            createFeedbackDots();
+
+            updateFeedbackSlider();
+
+        }
+    );
+
+
+    /* --------------------------------------------
+       Initial setup
+       -------------------------------------------- */
+
+    createFeedbackDots();
+
+    updateFeedbackSlider();
+
 }
 
 /* ===================== UTILITY FUNCTIONS ===================== */
